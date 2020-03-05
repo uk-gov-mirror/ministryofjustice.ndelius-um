@@ -21,7 +21,7 @@ pipeline {
                 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'XTerm']) {
                     sh '''
                         echo "Building version $version..."
-                        mkdir build
+                        rm -rf build && mkdir build
                         DOCKER_BUILDKIT=1
                         docker build --build-arg version=$version --build-arg nextVersion=$nextVersion \
                                      -o type=local,dest=build --target build .
