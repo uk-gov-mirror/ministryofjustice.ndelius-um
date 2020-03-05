@@ -44,11 +44,12 @@ node {
 }
 npmInstall.workingDir = file("${project.projectDir}/ui")
 npm_test.workingDir = file("${project.projectDir}/ui")
-npm_test.dependsOn(npmInstall)
-npm_run.workingDir = file("${project.projectDir}/ui")
-npm_run.args = ['build-prod']
-npm_run.dependsOn(npm_test)
-processResources.dependsOn(npm_run)
+npm_run_build.workingDir = file("${project.projectDir}/ui")
+npm_run_build.args = ['--prod']
+processResources.dependsOn npm_run_build
+clean {
+	delete 'ui/dist'
+}
 
 // Jacoco test coverage
 jacoco.toolVersion '0.8.5'
@@ -84,4 +85,15 @@ dependencies {
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 	testCompile('org.springframework.restdocs:spring-restdocs-mockmvc')
 	testCompile('org.springframework.security:spring-security-test')
+}
+task resolveDependencies {
+	setDescription "Resolves all projects dependencies from the repository."
+	setGroup "Build Server"
+	doLast {
+		rootProject.allprojects { project ->
+			Set<Configuration> configurations = project.buildscript.configurations + project.configurations
+			configurations.findAll { c -> c.canBeResolved }
+					.forEach { c -> c.resolve() }
+		}
+	}
 }

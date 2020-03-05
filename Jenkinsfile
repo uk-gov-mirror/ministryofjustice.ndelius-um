@@ -17,20 +17,15 @@ pipeline {
             }
         }
         stage('Build') {
-            when { expression { params.version == 'latest' } }
             steps {
                 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'XTerm']) {
-                    sh './gradlew clean build --info'
-                }
-            }
-        }
-        stage('Release') {
-            when { expression { params.version != 'latest' } }
-            steps {
-                wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'XTerm']) {
-                    sshagent(credentials: ['f44bc5f1-30bd-4ab9-ad61-cc32caf1562a']) {
-                        sh './gradlew clean release -Prelease.releaseVersion=$version -Prelease.newVersion=$nextVersion -Prelease.useAutomaticVersion=true'
-                    }
+                    sh '''
+                        echo "Building version $version..."
+                        mkdir build
+                        DOCKER_BUILDKIT=1
+                        docker build --build-arg version=$version --build-arg nextVersion=$nextVersion \
+                                     -o type=local,dest=build --target build .
+                    '''
                 }
             }
         }
@@ -43,10 +38,10 @@ pipeline {
                 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'XTerm']) {
                     sh '''
                         echo "Pushing ${version}..."
-                        docker build -t 895523100917.dkr.ecr.eu-west-2.amazonaws.com/hmpps/ndelius-um:latest \
+                        docker build --build-arg version=$version --build-arg nextVersion=$nextVersion \
+                                     -t 895523100917.dkr.ecr.eu-west-2.amazonaws.com/hmpps/ndelius-um:latest \
                                      -t 895523100917.dkr.ecr.eu-west-2.amazonaws.com/hmpps/ndelius-um:$version \
-                                     -t 895523100917.dkr.ecr.eu-west-2.amazonaws.com/hmpps/ndelius-um:$snapshotVersion \
-                                     --no-cache .
+                                     -t 895523100917.dkr.ecr.eu-west-2.amazonaws.com/hmpps/ndelius-um:$snapshotVersion .
                         aws ecr get-login --no-include-email --region eu-west-2 | source /dev/stdin
                         docker push 895523100917.dkr.ecr.eu-west-2.amazonaws.com/hmpps/ndelius-um:latest
                         docker push 895523100917.dkr.ecr.eu-west-2.amazonaws.com/hmpps/ndelius-um:$version

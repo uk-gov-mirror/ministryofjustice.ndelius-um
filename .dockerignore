@@ -1,0 +1,15 @@
+# IDE
+.idea
+*.iws
+*.iml
+*.ipr
+out
+
+# Dependencies
+.gradle
+node_modules
+
+# Build output
+build
+log
+ui/dist
